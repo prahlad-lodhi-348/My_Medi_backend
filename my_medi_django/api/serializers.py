@@ -33,6 +33,9 @@ class MedicineSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    # username = serializers.CharField()
+    email = serializers.EmailField()
     password = serializers.CharField()
 
+class ResendVerificationSerializer(serializers.Serializer):
+    email = serializers.EmailField()

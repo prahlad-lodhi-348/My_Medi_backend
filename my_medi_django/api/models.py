@@ -3,8 +3,9 @@ from django.db import models
 import uuid
 
 class User(AbstractUser):
+    email = models.EmailField(unique = True ) 
     is_email_verified = models.BooleanField(default=False)
-    email_verification_token = models.UUIDField(null=True, blank=True)
+    email_verification_token = models.UUIDField(null=True, blank=True, default=uuid.uuid4)
 
     def generate_verification_token(self):
         self.email_verification_token = uuid.uuid4()

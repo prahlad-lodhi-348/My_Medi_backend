@@ -23,7 +23,9 @@ from api.views import home
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home, name='home'),
-    path('api/', include('api.urls')),
+    # path('api/', include('api.urls')),
+    path("api/", include(("api.urls", "api"), namespace="api")),
+    
 ]
 
 if settings.DEBUG:

@@ -1,3 +1,5 @@
+from django.contrib.auth import get_user_model
+from .serializers import ResendVerificationSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -17,6 +19,7 @@ import base64
 from rest_framework.parsers import MultiPartParser, FormParser
 from PIL import Image
 import io
+from urllib.parse import urlencode
 
 
 class RegisterView(APIView):
@@ -44,24 +47,81 @@ class VerifyEmailView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'Invalid or already used token.'}, status=status.HTTP_400_BAD_REQUEST)
 
+class VerifyEmailWebView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, token):
+        success = False
+        try:
+            user = User.objects.get(email_verification_token=token, is_email_verified=False)
+            user.is_email_verified = True
+            user.email_verification_token = None
+            user.save()
+            success = True
+        except User.DoesNotExist:
+            success = False
+
+        # अगर आपके पास web frontend URL है तो redirect कर दो
+        frontend_base = getattr(settings, "FRONTEND_BASE_URL", "").strip()
+        if frontend_base:
+            params = urlencode({"verified": "1" if success else "0"})
+            return redirect(f"{frontend_base}/signin?{params}")
+
+        # वरना simple HTML page दिखा दो (no frontend)
+        if success:
+            return HttpResponse(
+                "<h2>Email verified ✅</h2><p>Now you can go back to the app and sign in.</p>",
+                content_type="text/html",
+            )
+        return HttpResponse(
+            "<h2>Invalid / expired link</h2><p>Please request a new verification email.</p>",
+            content_type="text/html",
+            status=400,
+        )
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = authenticate(username=serializer.validated_data['username'], password=serializer.validated_data['password'])
-            if user:
-                if not user.is_email_verified:
-                    return Response({'error': 'Email not verified.'}, status=status.HTTP_400_BAD_REQUEST)
-                token, created = Token.objects.get_or_create(user=user)
-                return Response({
-                    'token': token.key,
-                    'username': user.username,
-                    'is_email_verified': True
-                }, status=status.HTTP_200_OK)
-            return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"].strip()
+        password = serializer.validated_data["password"]
+
+        # Step 1: email se user dhundo
+        try:
+            user_obj = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "Invalid credentials"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Step 2: Django authenticate (username chahiye internally)
+        user = authenticate(username=user_obj.username, password=password)
+        if not user:
+            return Response(
+                {"error": "Invalid credentials"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Step 3: Email verified check
+        if not user.is_email_verified:
+            return Response(
+                {"error": "Email not verified."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Step 4: Token do
+        token, _ = Token.objects.get_or_create(user=user)
+        return Response({
+            "token": token.key,
+            "username": user.username,
+            "email": user.email,
+            "is_email_verified": True
+        }, status=status.HTTP_200_OK)
+    
 
 class ProfileView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -229,3 +289,40 @@ def home(request):
         return redirect('/admin/login/')
     medicines = Medicine.objects.filter(user=request.user)
     return render(request, 'home.html', {'user': request.user, 'medicines': medicines})
+
+
+
+
+
+UserModel = get_user_model()
+
+class ResendVerificationView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ResendVerificationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data["email"].strip()
+
+        try:
+            user = UserModel.objects.get(email__iexact=email)
+            if not user.is_email_verified:
+                send_verification_email(user, request)
+        except UserModel.DoesNotExist:
+            pass
+
+        return Response(
+            {"message": "If this email is registered and not verified, a verification link has been sent."},
+            status=status.HTTP_200_OK
+        )
+
+
+class LogoutView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if request.auth:
+            request.auth.delete()
+        return Response({"message": "Logged out successfully."}, status=status.HTTP_200_OK)

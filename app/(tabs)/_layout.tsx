@@ -36,6 +36,13 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
       }}
     >
+      {/*
+       * Tab structure:
+       * - profile: Dashboard (next dose, health stats, links)
+       * - schedule: Regimen list (medicine schedule)
+       * - stock-alerts: Low stock alerts
+       * - (index is hidden - serves as profile)
+       */}
       <Tabs.Screen
         name="profile"
         options={{
@@ -53,26 +60,10 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="inventory"
-        options={{
-          title: "Inventory",
-          tabBarIcon: ({ color }) => (
-            <TabBarIcon name="medkit" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="stock-alerts"
         options={{
           title: "Alerts",
           tabBarIcon: ({ color }) => <TabBarIcon name="bell" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
         }}
       />
     </Tabs>

@@ -24,6 +24,10 @@ export default function ProfileScreen() {
     phone: "",
     gender: "",
     date_of_birth: "",
+    caregiver: "",
+    caregiver_email: "",
+    caregiver_phoneno: "",
+    caregiver_relationship: "",
   });
 
   const colorScheme = useColorScheme();
@@ -49,13 +53,17 @@ export default function ProfileScreen() {
     user?.gender === "M" ? "Male"
       : user?.gender === "F" ? "Female"
         : user?.gender === "O" ? "Other"
-          : null;
+: null;
 
   const handleEditOpen = () => {
     setForm({
       phone: user?.phone || "",
       gender: user?.gender || "",
       date_of_birth: user?.date_of_birth || "",
+      caregiver: user?.caregiver || "",
+      caregiver_email: user?.caregiver_email || "",
+      caregiver_phoneno: user?.caregiver_phoneno || "",
+      caregiver_relationship: user?.caregiver_relationship || "",
     });
     setEditing(true);
   };
@@ -70,6 +78,10 @@ export default function ProfileScreen() {
           phone: form.phone || null,
           gender: form.gender || null,
           date_of_birth: form.date_of_birth || null,
+          caregiver: form.caregiver || null,
+          caregiver_email: form.caregiver_email || null,
+          caregiver_phoneno: form.caregiver_phoneno || null,
+          caregiver_relationship: form.caregiver_relationship || null,
         },
       });
       await loadUser(token!);
@@ -194,6 +206,8 @@ export default function ProfileScreen() {
               { label: "Age", value: user?.age ? `${user.age} years` : null },
               { label: "Gender", value: genderLabel },
               { label: "Date of Birth", value: user?.date_of_birth },
+              {label :"caregiver ",value:user?.caregiver 
+              }
             ].map((item, i, arr) =>
               item.value ? (
                 <View key={item.label}>
@@ -264,7 +278,7 @@ export default function ProfileScreen() {
               ))}
             </View>
 
-            {/* Date of Birth */}
+{/* Date of Birth */}
             <Text style={{ color: textMuted, fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
               Date of Birth
             </Text>
@@ -272,6 +286,72 @@ export default function ProfileScreen() {
               value={form.date_of_birth}
               onChangeText={(v) => setForm({ ...form, date_of_birth: v })}
               placeholder="YYYY-MM-DD"
+              placeholderTextColor={textMuted}
+              style={{
+                backgroundColor: inputBg, color: textColor,
+                borderRadius: 10, padding: 12, marginBottom: 16,
+                borderWidth: 1, borderColor,
+              }}
+            />
+
+{/* Caregiver Name */}
+            <Text style={{ color: textMuted, fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+              Caregiver Name
+            </Text>
+            <TextInput
+              value={form.caregiver}
+              onChangeText={(v) => setForm({ ...form, caregiver: v })}
+              placeholder="Enter caregiver name"
+              placeholderTextColor={textMuted}
+              style={{
+                backgroundColor: inputBg, color: textColor,
+                borderRadius: 10, padding: 12, marginBottom: 16,
+                borderWidth: 1, borderColor,
+              }}
+            />
+
+            {/* Caregiver Email */}
+            <Text style={{ color: textMuted, fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+              Caregiver Email
+            </Text>
+            <TextInput
+              value={form.caregiver_email}
+              onChangeText={(v) => setForm({ ...form, caregiver_email: v })}
+              placeholder="caregiver@example.com"
+              keyboardType="email-address"
+              placeholderTextColor={textMuted}
+              style={{
+                backgroundColor: inputBg, color: textColor,
+                borderRadius: 10, padding: 12, marginBottom: 16,
+                borderWidth: 1, borderColor,
+              }}
+            />
+
+            {/* Caregiver Phone */}
+            <Text style={{ color: textMuted, fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+              Caregiver Phone
+            </Text>
+            <TextInput
+              value={form.caregiver_phoneno}
+              onChangeText={(v) => setForm({ ...form, caregiver_phoneno: v })}
+              placeholder="+91 XXXXXXXXXX"
+              keyboardType="phone-pad"
+              placeholderTextColor={textMuted}
+              style={{
+                backgroundColor: inputBg, color: textColor,
+                borderRadius: 10, padding: 12, marginBottom: 16,
+                borderWidth: 1, borderColor,
+              }}
+            />
+
+            {/* Caregiver Relationship */}
+            <Text style={{ color: textMuted, fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+              Relationship (e.g., Parent, Spouse)
+            </Text>
+            <TextInput
+              value={form.caregiver_relationship}
+              onChangeText={(v) => setForm({ ...form, caregiver_relationship: v })}
+              placeholder="Enter relationship"
               placeholderTextColor={textMuted}
               style={{
                 backgroundColor: inputBg, color: textColor,

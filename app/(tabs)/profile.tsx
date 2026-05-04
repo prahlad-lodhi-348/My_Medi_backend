@@ -1,15 +1,24 @@
 import { AppCard, AppScreen } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/src/api/client";
 import { theme } from "@/src/theme";
+import { CalendarRange, Regimen } from "@/src/types/phase2";
 import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
-import { fetchMedicines, getReminderSpeech, Medicine } from '../../services/api';
-import { playReminderVoice, speakText, stopSpeech } from '../../utils/voice';
+import { playReminderVoice, stopSpeech } from '../../utils/voice';
+
+function fmtDate(d: Date): string {
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 export default function Dashboard() {
   const { user, token } = useAuth();
-  const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [regimens, setRegimens] = useState<Regimen[]>([]);
+  const [calendarData, setCalendarData] = useState<CalendarRange | null>(null);
   const [loading, setLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
@@ -24,15 +33,17 @@ export default function Dashboard() {
   const stepCount = user?.step_count;
   const waterIntake = user?.water_intake;
 
+  const today = fmtDate(new Date());
+
   useEffect(() => {
     const loadData = async () => {
       if (!token) return;
       setLoading(true);
       try {
-        const data = await fetchMedicines(token);
-        setMedicines(data);
+        const data = await api<Regimen[]>("regimens/", { token });
+        setRegimens(data);
       } catch (error) {
-        console.error('Failed to fetch medicines', error);
+        console.error('Failed to fetch regimens', error);
       } finally {
         setLoading(false);
       }
@@ -40,25 +51,98 @@ export default function Dashboard() {
     loadData();
   }, [token]);
 
-  const nextDose = medicines.length > 0 ? medicines[0] : null;
+  // Load today's calendar for all regimens
+  useEffect(() => {
+    const loadCalendar = async () => {
+      if (!token || regimens.length === 0) return;
+      try {
+        // Get calendar for first regimen (or could iterate all)
+        const regimenId = regimens[0].id;
+        const start = today;
+        const end = today;
+        const data = await api<CalendarRange>(`regimens/${regimenId}/calendar/?start=${start}&end=${end}`, { token });
+        setCalendarData(data);
+      } catch (error) {
+        console.error('Failed to load calendar', error);
+      }
+    };
+    loadCalendar();
+  }, [token, regimens]);
 
-  const handleListen = async () => {
-    if (!nextDose || !token) return;
+  // Get next pending dose
+  const nextPendingDose = (() => {
+    if (!calendarData || !calendarData[today]) return null;
+    const todayDoses = calendarData[today].doses;
+    const pending = todayDoses.find(d => d.status === 'PENDING');
+    if (!pending) return null;
+    const regimen = regimens.find(r => r.dose_times.some(dt => dt.id === pending.dose_time_id));
+    return {
+      name: regimen?.medicine.name || 'Medicine',
+      dose: `${pending.quantity} ${pending.unit}`,
+      time: pending.time?.slice(0, 5) || 'Upcoming',
+      strength: regimen?.medicine.strength || '',
+      doseTimeId: pending.dose_time_id,
+    };
+  })();
+
+  // Get today's doses for summary
+  const todayDosesSummary = (() => {
+    if (!calendarData || !calendarData[today]) return { taken: 0, skipped: 0, pending: 0 };
+    const doses = calendarData[today].doses;
+    return {
+      taken: doses.filter(d => d.status === 'TAKEN').length,
+      skipped: doses.filter(d => d.status === 'SKIPPED').length,
+      pending: doses.filter(d => d.status === 'PENDING').length,
+    };
+  })();
+
+const handleListen = async () => {
+    if (!nextPendingDose || !token) return;
     setIsSpeaking(true);
     try {
-      if (nextDose.id) {
-        const speechData = await getReminderSpeech(token, nextDose.id);
-        if (speechData?.speech) {
-          speakText(speechData.speech, { onDone: () => setIsSpeaking(false), onStopped: () => setIsSpeaking(false) });
-          return;
-        }
-      }
-    } catch (_) { }
-    playReminderVoice(userName, nextDose.name, nextDose.how_it_works);
-    setTimeout(() => setIsSpeaking(false), 4000);
+      playReminderVoice(userName, nextPendingDose.name, nextPendingDose.strength || '');
+      setTimeout(() => setIsSpeaking(false), 4000);
+    } catch (error) {
+      console.error('Speech error:', error);
+      setIsSpeaking(false);
+    }
   };
 
-  const handleStopSpeech = () => { stopSpeech(); setIsSpeaking(false); };
+const handleStopSpeech = () => { stopSpeech(); setIsSpeaking(false); };
+
+  // Mark dose as taken
+  const markAsTaken = async (regimenId: number, doseTimeId: number, date: string) => {
+    if (!token) return;
+    try {
+      await api("intakes/", {
+        method: "POST",
+        token,
+        body: { regimen: regimenId, dose_time: doseTimeId, date, status: "TAKEN" },
+      });
+      // Reload calendar
+      const data = await api<CalendarRange>(`regimens/${regimenId}/calendar/?start=${today}&end=${today}`, { token });
+      setCalendarData(data);
+    } catch (error) {
+      console.error("Failed to mark as taken", error);
+    }
+  };
+
+  // Mark dose as skipped
+  const markAsSkipped = async (regimenId: number, doseTimeId: number, date: string) => {
+    if (!token) return;
+    try {
+      await api("intakes/", {
+        method: "POST",
+        token,
+        body: { regimen: regimenId, dose_time: doseTimeId, date, status: "SKIPPED" },
+      });
+      // Reload calendar
+      const data = await api<CalendarRange>(`regimens/${regimenId}/calendar/?start=${today}&end=${today}`, { token });
+      setCalendarData(data);
+    } catch (error) {
+      console.error("Failed to mark as skipped", error);
+    }
+  };
 
   const getGreeting = () => {
     const h = new Date().getHours();
@@ -94,7 +178,7 @@ export default function Dashboard() {
           </Link>
         </View>
 
-        {/* Next Dose Card */}
+{/* Next Dose Card */}
         <AppCard style={{ marginBottom: theme.spacing.lg }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
             <Text style={{ color: textMuted, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 }}>Next Dose</Text>
@@ -105,30 +189,39 @@ export default function Dashboard() {
 
           {loading ? (
             <ActivityIndicator size="large" color={theme.colors.info} style={{ marginVertical: 24 }} />
-          ) : nextDose ? (
+          ) : nextPendingDose ? (
             <>
-              <Text style={{ color: textColor, fontSize: 30, fontWeight: '800', marginTop: 6, letterSpacing: -0.5 }}>{nextDose.name}</Text>
-              <Text style={{ color: textSecondary, fontSize: 14, fontWeight: '500', marginTop: 2 }}>{nextDose.dosage || 'Standard dose'}</Text>
-              {nextDose.how_it_works && (
+              <Text style={{ color: textColor, fontSize: 30, fontWeight: '800', marginTop: 6, letterSpacing: -0.5 }}>{nextPendingDose.name}</Text>
+              <Text style={{ color: textSecondary, fontSize: 14, fontWeight: '500', marginTop: 2 }}>{nextPendingDose.dose}</Text>
+              {nextPendingDose.strength && (
                 <View style={{ backgroundColor: isDark ? theme.dark.surfaceElevated : '#f8fafc', borderRadius: theme.radius.lg, padding: 14, marginTop: 14 }}>
-                  <Text style={{ color: textColor, fontSize: 13, fontWeight: '700', marginBottom: 4 }}>🔬 How it Works</Text>
-                  <Text style={{ color: textSecondary, fontSize: 13, lineHeight: 20 }}>{nextDose.how_it_works}</Text>
+                  <Text style={{ color: textColor, fontSize: 13, fontWeight: '700', marginBottom: 4 }}>💊 Strength</Text>
+                  <Text style={{ color: textSecondary, fontSize: 13, lineHeight: 20 }}>{nextPendingDose.strength}</Text>
                 </View>
               )}
-              {nextDose.side_effects && (
-                <View style={{ backgroundColor: isDark ? '#1f1115' : theme.colors.dangerLight, borderRadius: theme.radius.lg, padding: 14, marginTop: 10, borderWidth: 1, borderColor: isDark ? '#3f1a20' : theme.colors.danger }}>
-                  <Text style={{ color: isDark ? '#fca5a5' : theme.colors.danger, fontSize: 13, fontWeight: '700', marginBottom: 4 }}>⚠️ Side Effects</Text>
-                  <Text style={{ color: isDark ? '#fca5a5' : theme.colors.danger, fontSize: 13, lineHeight: 20 }}>{nextDose.side_effects}</Text>
-                </View>
-              )}
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18 }}>
+<View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.colors.info, marginRight: 6 }} />
-                  <Text style={{ color: theme.colors.info, fontWeight: '700', fontSize: 15 }}>{nextDose.time || 'Upcoming'}</Text>
+                  <Text style={{ color: theme.colors.info, fontWeight: '700', fontSize: 15 }}>{nextPendingDose.time}</Text>
                 </View>
                 <TouchableOpacity onPress={isSpeaking ? handleStopSpeech : handleListen} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isSpeaking ? (isDark ? '#1f1115' : '#fef2f2') : (isDark ? '#101520' : '#eff6ff'), paddingHorizontal: 14, paddingVertical: 8, borderRadius: 50 }}>
                   <Text style={{ fontSize: 16, marginRight: 5 }}>{isSpeaking ? '⏹' : '🔊'}</Text>
                   <Text style={{ color: isSpeaking ? theme.colors.danger : theme.colors.info, fontWeight: '700', fontSize: 13 }}>{isSpeaking ? 'Stop' : 'Listen'}</Text>
+                </TouchableOpacity>
+              </View>
+              {/* Taken/Skipped buttons */}
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+                <TouchableOpacity
+                  onPress={() => nextPendingDose && markAsTaken(regimens[0]?.id, nextPendingDose.doseTimeId, today)}
+                  style={{ flex: 1, backgroundColor: theme.colors.success, padding: 12, borderRadius: 12, alignItems: 'center' }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>✅ Mark Taken</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => nextPendingDose && markAsSkipped(regimens[0]?.id, nextPendingDose.doseTimeId, today)}
+                  style={{ flex: 1, backgroundColor: '#f59e0b', padding: 12, borderRadius: 12, alignItems: 'center' }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 13 }}>❌ Mark Skipped</Text>
                 </TouchableOpacity>
               </View>
             </>
@@ -139,6 +232,26 @@ export default function Dashboard() {
             </View>
           )}
         </AppCard>
+
+        {/* Today's Doses Summary - Taken/Skipped */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing.lg }}>
+          <AppCard style={{ width: '48%', padding: theme.spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ fontSize: 18, marginRight: 8 }}>✅</Text>
+              <Text style={{ color: textColor, fontSize: 22, fontWeight: '800' }}>{todayDosesSummary.taken}</Text>
+            </View>
+            <Text style={{ color: textMuted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>Taken</Text>
+            <Text style={{ color: theme.colors.success, fontSize: 11, fontWeight: '600', marginTop: 4 }}>Today</Text>
+          </AppCard>
+          <AppCard style={{ width: '48%', padding: theme.spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ fontSize: 18, marginRight: 8 }}>❌</Text>
+              <Text style={{ color: textColor, fontSize: 22, fontWeight: '800' }}>{todayDosesSummary.skipped}</Text>
+            </View>
+            <Text style={{ color: textMuted, fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>Skipped</Text>
+            <Text style={{ color: '#f59e0b', fontSize: 11, fontWeight: '600', marginTop: 4 }}>Today</Text>
+          </AppCard>
+        </View>
 
         {/* Health Stats Row */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: theme.spacing.lg }}>
@@ -160,27 +273,7 @@ export default function Dashboard() {
           </AppCard>
         </View>
 
-        {/* Medicine Inventory Link */}
-        <Link href="/medicine-list" asChild>
-          <TouchableOpacity style={{ marginBottom: theme.spacing.lg }}>
-            <AppCard>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flex: 1 }}>
-                  <View style={{ backgroundColor: '#e0e7ff', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                    <Text style={{ fontSize: 18 }}>💊</Text>
-                  </View>
-                  <Text style={{ color: textColor, fontSize: 18, fontWeight: '800' }}>Medicine Inventory</Text>
-                  <Text style={{ color: textSecondary, fontSize: 13, marginTop: 3 }}>{medicines.length > 0 ? medicines.length + ' medicines tracked' : 'No medicines added yet'}</Text>
-                </View>
-                <View style={{ backgroundColor: isDark ? theme.dark.surfaceElevated : '#f1f5f9', padding: 12, borderRadius: 50 }}>
-                  <Text style={{ color: textSecondary, fontWeight: '700', fontSize: 16 }}>→</Text>
-                </View>
-              </View>
-            </AppCard>
-          </TouchableOpacity>
-        </Link>
-
-        {/* Neuro AI Link */}
+{/* Neuro AI Link */}
         <Link href="/ai-chat" asChild>
           <TouchableOpacity style={{ marginBottom: theme.spacing.lg }}>
             <AppCard>

@@ -1,10 +1,12 @@
 import { AppScreen, EmptyState, ErrorState, LoadingState } from "@/components/ui";
-import { listRegimens } from "@/src/api/phase2"; // ✅ phase2 API — coco bhi aayegi
+import { deleteRegimen, listRegimens } from "@/src/api/phase2";
 import { Regimen } from "@/src/types/phase2";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -19,6 +21,7 @@ export default function RegimenListScreen() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -36,6 +39,38 @@ export default function RegimenListScreen() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleDelete = (regimen: Regimen) => {
+    Alert.alert(
+      "Delete Regimen",
+      `Remove ${regimen.medicine.name} from your schedule? This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setDeletingIds((prev) => new Set(prev).add(regimen.id));
+            // Optimistic removal
+            setItems((prev) => prev.filter((r) => r.id !== regimen.id));
+            try {
+              await deleteRegimen(regimen.id);
+            } catch (e: any) {
+              // Revert on failure
+              setItems((prev) => [...prev, regimen].sort((a, b) => a.id - b.id));
+              Alert.alert("Error", e?.message ?? "Failed to delete. Please try again.");
+            } finally {
+              setDeletingIds((prev) => {
+                const next = new Set(prev);
+                next.delete(regimen.id);
+                return next;
+              });
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <AppScreen>
@@ -78,6 +113,7 @@ export default function RegimenListScreen() {
           const isLowStock = r.stock
             ? Number(r.stock.current_quantity) < 10
             : false;
+          const isDeleting = deletingIds.has(r.id);
 
           return (
             <TouchableOpacity
@@ -88,9 +124,10 @@ export default function RegimenListScreen() {
                   params: { regimenId: String(r.id) },
                 })
               }
-              style={styles.card}
+              style={[styles.card, isLowStock && styles.cardLowStock]}
+              activeOpacity={0.85}
             >
-              {/* Icon + Info */}
+              {/* Icon + Info + Delete */}
               <View style={styles.cardRow}>
                 <View style={styles.iconBox}>
                   <Text style={styles.iconText}>💊</Text>
@@ -107,12 +144,28 @@ export default function RegimenListScreen() {
                   </Text>
                 </View>
 
-                {/* Low stock warning */}
-                {isLowStock && (
-                  <View style={styles.warningBadge}>
-                    <Text style={styles.warningText}>⚠️</Text>
-                  </View>
-                )}
+                <View style={styles.cardActions}>
+                  {/* Low stock warning badge */}
+                  {isLowStock && (
+                    <View style={styles.warningBadge}>
+                      <Text style={styles.warningText}>⚠️</Text>
+                    </View>
+                  )}
+
+                  {/* Delete button */}
+                  <TouchableOpacity
+                    onPress={() => handleDelete(r)}
+                    disabled={isDeleting}
+                    style={[styles.deleteBtn, isDeleting && styles.deleteBtnDisabled]}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    {isDeleting ? (
+                      <ActivityIndicator size={14} color="#fff" />
+                    ) : (
+                      <FontAwesome name="trash" size={14} color="#fff" />
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Start date */}
@@ -178,6 +231,11 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  cardLowStock: {
+    borderColor: "#fde68a",
+    borderLeftWidth: 3,
+    borderLeftColor: "#f59e0b",
+  },
   cardRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -196,6 +254,12 @@ const styles = StyleSheet.create({
   },
   cardInfo: {
     flex: 1,
+  },
+  cardActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginLeft: 8,
   },
   medicineName: {
     fontSize: 16,
@@ -217,6 +281,17 @@ const styles = StyleSheet.create({
   },
   warningText: {
     fontSize: 16,
+  },
+  deleteBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: "#ef4444",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteBtnDisabled: {
+    backgroundColor: "#fca5a5",
   },
   startDate: {
     fontSize: 12,

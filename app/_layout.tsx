@@ -9,7 +9,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="sign-in" options={{ headerShown: false }} />
@@ -74,15 +74,6 @@ export default function RootLayout() {
               headerTintColor: "#0d9488",
             }}
           />
-          <Stack.Screen
-            name="medicine-list"
-            options={{
-              headerShown: true,
-              title: "Medicine Inventory",
-              headerStyle: { backgroundColor: "#fafafa" },
-              headerTintColor: "#0d9488",
-            }}
-          />
 
           <Stack.Screen
             name="+not-found"
@@ -98,3 +89,4 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+

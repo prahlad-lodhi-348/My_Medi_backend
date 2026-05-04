@@ -36,6 +36,8 @@ export interface MedicineInput {
   form: MedicineForm;
   strength: string;
   notes: string;
+  brand?: string;
+  description?: string;
 }
 
 export interface DoseTimeInput {
@@ -67,6 +69,9 @@ export interface Medicine {
   form: MedicineForm;
   strength: string;
   notes: string;
+  brand?: string;
+  description?: string;
+  image?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -116,6 +121,9 @@ export interface StockStatus {
   avg_daily_required: string;
   days_remaining: string;
   is_low_stock: boolean;
+  reorder_url?: string;
+  last_low_stock_seen_at?: string | null;
+  estimated_out_of_stock_date?: string; // computed client-side
 }
 
 export interface StockUpdatePayload {
@@ -175,6 +183,8 @@ export interface LowStockAlert {
   threshold_days: number;
   created_at: string;
   is_acknowledged: boolean;
+  reorder_url?: string | null;
+  estimated_out_of_stock_date?: string; // computed client-side
 }
 
 export interface LowStockAlertResponse {

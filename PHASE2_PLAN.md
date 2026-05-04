@@ -61,7 +61,7 @@ context/
 
 ### Step 1: Foundation & Config
 1. Update `tsconfig.json` paths to include `@/src/*`.
-2. Create `src/constants/Config.ts` with `getBaseUrl()` (Android emulator `10.0.2.2` vs device `192.168.1.6`).
+2. Create `src/constants/Config.ts` with `getBaseUrl()` (Android emulator `10.0.2.2` vs device `192.168.1.2`).
 3. Create `src/types/phase2.ts` with all strict types (Regimen, DoseTime, StockStatus, CalendarRange, LoginResponse, etc.).
 4. Create `src/theme/colors.ts` with warm medical palette.
 
@@ -117,7 +117,7 @@ Create reusable UI components in `src/components/ui/` with warm medical styling 
 ## Follow-up Steps
 - Install dependencies: `zod`, `react-hook-form`, `@hookform/resolvers`, `react-native-paper` (optional, we can do custom)
 - Run `npx expo start`
-- Test on Android emulator (10.0.2.2) and physical device (192.168.1.6)
+- Test on Android emulator (10.0.2.2) and physical device (192.168.1.2)
 
 **Note:** The user specified `fetch` over axios. We will stick to fetch. No emojis in UI text.
 

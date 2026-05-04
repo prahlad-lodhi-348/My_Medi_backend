@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Image, SafeAreaView, Text, TouchableOpacity, View } from 'react-native';
-import { analyzeMedicineImage, getReminderSpeech } from '../services/api';
+import { analyzeMedicine, getReminderSpeech } from '../services/api';
 
 export default function AddMedicine() {
   const [image, setImage] = useState<string | null>(null);
@@ -24,7 +24,7 @@ export default function AddMedicine() {
       setImage(result.assets[0].uri);
     }
   };
-  
+
   const takePhoto = async () => {
     let result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
@@ -41,8 +41,8 @@ export default function AddMedicine() {
     if (!image || !token) return;
     setLoading(true);
     try {
-      const response = await analyzeMedicineImage(token, image);
-      
+      const response = await analyzeMedicine(token, image);
+
       // Attempt to trigger the Speaking AI
       const medId = response.id || response.med_id;
       if (medId) {
@@ -88,14 +88,14 @@ export default function AddMedicine() {
         )}
 
         <View className="flex-row justify-between mb-4">
-          <TouchableOpacity 
-            onPress={takePhoto} 
+          <TouchableOpacity
+            onPress={takePhoto}
             className="flex-1 bg-slate-800 p-4 rounded-2xl items-center mr-2"
           >
             <Text className="text-white font-bold">Open Camera</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={pickImage} 
+          <TouchableOpacity
+            onPress={pickImage}
             className="flex-1 bg-slate-800 p-4 rounded-2xl items-center ml-2"
           >
             <Text className="text-white font-bold">Open Gallery</Text>
@@ -103,8 +103,8 @@ export default function AddMedicine() {
         </View>
 
         {image && (
-          <TouchableOpacity 
-            onPress={handleAnalyze} 
+          <TouchableOpacity
+            onPress={handleAnalyze}
             disabled={loading}
             className="bg-blue-600 p-4 rounded-2xl items-center mt-4 flex-row justify-center"
           >

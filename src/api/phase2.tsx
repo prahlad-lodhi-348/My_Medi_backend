@@ -266,3 +266,37 @@ export async function createMedicine(
 export async function getMedicineDetail(id: number): Promise<Medicine> {
   return api<Medicine>(`medicines/${id}/`);
 }
+
+/**
+ * POST /medicines/ (multipart/form-data)
+ * Create a new medicine with optional image
+ */
+export async function createMedicineWithImage(
+  payload: Omit<Medicine, 'id' | 'created_at' | 'updated_at'> & { imageUri?: string }
+): Promise<Medicine> {
+  const form = new FormData();
+  form.append('name', payload.name);
+  form.append('form', payload.form);
+  form.append('strength', payload.strength);
+  if (payload.notes) form.append('notes', payload.notes);
+  if (payload.brand) form.append('brand', payload.brand);
+  if (payload.description) form.append('description', payload.description);
+  if (payload.imageUri) {
+    const filename = payload.imageUri.split('/').pop() ?? 'medicine.jpg';
+    const ext = filename.split('.').pop()?.toLowerCase() ?? 'jpg';
+    const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
+    form.append('image', { uri: payload.imageUri, name: filename, type: mimeType } as any);
+  }
+  return api<Medicine>('medicines/', {
+    method: 'POST',
+    body: form,
+    isForm: true,
+  });
+}
+
+/**
+ * GET /regimens/ with embedded stock — used for rich inventory display
+ * Re-export listRegimens as getInventory for semantic clarity
+ */
+export { listRegimens as getInventory };
+

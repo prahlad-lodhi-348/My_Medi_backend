@@ -14,6 +14,9 @@ interface User {
   gender?: string;
   date_of_birth?: string;
   caregiver?: string;
+  caregiver_email?: string;
+  caregiver_phoneno?: string;
+  caregiver_relationship?: string;
   step_count?: number;
   water_intake?: number;
 }
@@ -53,14 +56,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     bootstrapAsync();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+}, []);
 
   const loadUser = async (authToken?: string) => {
     const activeToken = authToken || token;
     if (!activeToken) return;
 
     try {
-      interface ProfileResponse {
+interface ProfileResponse {
         username?: string;
         name?: string;
         email?: string;
@@ -70,6 +73,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         gender?: string;
         date_of_birth?: string;
         caregiver?: string;
+        caregiver_email?: string;
+        caregiver_phoneno?: string;
+        caregiver_relationship?: string;
         step_count?: number;
         water_intake?: number;
         [key: string]: unknown;
@@ -87,6 +93,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         gender: profileData.gender,
         date_of_birth: profileData.date_of_birth,
         caregiver: profileData.caregiver,
+        caregiver_email: profileData.caregiver_email,
+        caregiver_phoneno: profileData.caregiver_phoneno,
+        caregiver_relationship: profileData.caregiver_relationship,
         step_count: profileData.step_count,
         water_intake: profileData.water_intake,
       });

@@ -1,5 +1,5 @@
 
-const DEVICE_BASE = "http://192.168.1.7:8000/api";
+const DEVICE_BASE = "http://192.168.1.6:8000/api";
 const ANDROID_EMULATOR_BASE = "http://10.0.2.2:8000/api";
 
 // Optional override: set in app config as EXPO_PUBLIC_API_BASE_URL
@@ -11,7 +11,7 @@ export function getApiBaseUrl(): string {
   // if (Platform.OS === "android") return ANDROID_EMULATOR_BASE;
   return DEVICE_BASE;
 }
-
+//  json  mein convert function 
 async function parseBody(res: Response): Promise<unknown> {
   const text = await res.text();
   if (!text) return null;
@@ -21,7 +21,7 @@ async function parseBody(res: Response): Promise<unknown> {
     return text;
   }
 }
-
+// request function of methods and ye connect api ko response bhejta hai 
 async function request<T>(
   path: string,
   opts?: { method?: string; token?: string; body?: unknown; isForm?: boolean }
@@ -32,7 +32,7 @@ async function request<T>(
   const headers: Record<string, string> = {};
   if (opts?.token) headers.Authorization = `Token ${opts.token}`;
 
-  // IMPORTANT: FormData me Content-Type set mat karo (fetch khud boundary set karta hai)
+  // IMPORTANT: FormData me Content-Type set mat karo (fetch khud boundary set karta hai) but ye abhi temprary kaam  ke liye hai 
   if (!opts?.isForm) headers["Content-Type"] = "application/json";
 
   const res = await fetch(url, {

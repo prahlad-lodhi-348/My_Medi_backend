@@ -1,7 +1,9 @@
 import { useAuth } from "@/context/AuthContext";
 import { getInventory } from "@/src/api/phase2";
 import { Regimen } from "@/src/types/phase2";
+import * as ImagePicker from 'expo-image-picker';
 import { Stack } from "expo-router";
+import * as Speech from 'expo-speech';
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -15,6 +17,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import { analyzeMedicine } from "../services/api";
 
 interface Message {
   id: string;
@@ -50,14 +53,75 @@ export default function AIChat() {
   const [contextErr, setContextErr] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>([
-    { id: "1", role: "ai", content: "Hello! I am Neuro AI. How can I assist with your health or medications today?" },
+    { id: "1", role: "ai", content: "Hello! I am Neuro AI. How can I assist with your health or medications today? Tap camera 📷 to upload medicine image for analysis." },
   ]);
   const [query, setQuery] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageAnalyzing, setImageAnalyzing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isLongThinking, setIsLongThinking] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  // Load medicine context once on mount
+  // Image analysis functions
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Allow photo library for Neuro AI image analysis.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Allow camera for Neuro AI.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const analyzeImage = async () => {
+    if (!selectedImage || !token) return Alert.alert('Error', 'Image or login issue.');
+
+    setImageAnalyzing(true);
+    setMessages(p => [...p, { id: `img-${Date.now()}`, role: 'user' as const, content: '📷 Neuro AI analyzing image...' }]);
+
+    try {
+      const result = await analyzeMedicine(token, selectedImage);
+      const content = `✅ Analysis:\nMedicine: ${result.name || 'Detected'}\nForm: ${result.form || 'N/A'}\nAdded to inventory!`;
+      const aiMsg = { id: `ai-${Date.now()}`, role: 'ai' as const, content };
+      setMessages(p => [...p, aiMsg]);
+      Speech.speak(result.name || 'Medicine analyzed', { language: 'en' });
+    } catch {
+      setMessages(p => [...p, { id: `err-${Date.now()}`, role: 'ai' as const, content: 'Image analysis failed. Try text chat.' }]);
+    } finally {
+      setSelectedImage(null);
+      setImageAnalyzing(false);
+    }
+  };
+
+  const speakLast = () => {
+    const last = messages[messages.length - 1];
+    if (last?.role === 'ai') Speech.speak(last.content, { language: 'en' });
+  };
+
+
   useEffect(() => {
     setContextLoading(true);
     getInventory()
@@ -111,7 +175,7 @@ export default function AIChat() {
       const BASE = (() => {
         const envBase = process.env.EXPO_PUBLIC_API_BASE_URL;
         if (envBase && envBase.startsWith("http")) return envBase;
-        return "http://192.168.1.6:8000/api";
+        return "http://192.168.1.5:8000/api";
       })();
 
       const res = await fetch(`${BASE}/ai-chat/`, {
@@ -251,7 +315,7 @@ export default function AIChat() {
         onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
         ListFooterComponent={() => (
           <>
-            {loading && !isLongThinking && (
+            {(imageAnalyzing || loading) && !isLongThinking && (
               <View style={{
                 alignSelf: "flex-start",
                 backgroundColor: isDark ? "#1f2937" : "#e5e7eb",
@@ -264,7 +328,9 @@ export default function AIChat() {
                 gap: 8,
               }}>
                 <ActivityIndicator color={isDark ? "#fff" : "#374151"} size="small" />
-                <Text style={{ color: isDark ? "#94a3b8" : "#6b7280", fontSize: 13 }}>Thinking...</Text>
+                <Text style={{ color: isDark ? "#94a3b8" : "#6b7280", fontSize: 13 }}>
+                  {imageAnalyzing ? 'Analyzing image...' : 'Thinking...'}
+                </Text>
               </View>
             )}
             {loading && isLongThinking && (

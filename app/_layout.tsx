@@ -1,11 +1,30 @@
 import { AuthProvider } from "@/context/AuthContext";
-import { Stack } from "expo-router";
+import {
+  registerForPushNotificationsAsync,
+  setupNotificationCategories,
+  setupNotificationTapHandler,
+} from "@/src/lib/notification";
+import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React from "react";
+import React, { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "../global.css";
 
 export default function RootLayout() {
+  const router = useRouter();
+
+  useEffect(() => {
+    setupNotificationCategories();
+    registerForPushNotificationsAsync()
+      .then((token) => {
+        if (token) console.log('Push notification token:', token);
+      })
+      .catch((error) => console.error('Notification setup failed:', error));
+
+    const cleanup = setupNotificationTapHandler(router);
+    return cleanup;
+  }, []);
+
   return (
     <SafeAreaProvider>
       <AuthProvider>
@@ -89,4 +108,3 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
-

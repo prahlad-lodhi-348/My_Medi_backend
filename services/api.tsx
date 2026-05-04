@@ -1,5 +1,5 @@
 
-const DEVICE_BASE = "http://192.168.1.6:8000/api";
+const DEVICE_BASE = "http://192.168.1.5:8000/api";
 const ANDROID_EMULATOR_BASE = "http://10.0.2.2:8000/api";
 
 // Optional override: set in app config as EXPO_PUBLIC_API_BASE_URL

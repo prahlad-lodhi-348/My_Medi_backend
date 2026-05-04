@@ -75,12 +75,27 @@ export default function Dashboard() {
     const todayDoses = calendarData[today].doses;
     const pending = todayDoses.find(d => d.status === 'PENDING');
     if (!pending) return null;
+    
+    // Find the regimen that contains this dose time
     const regimen = regimens.find(r => r.dose_times.some(dt => dt.id === pending.dose_time_id));
+    
+    // Ensure we have valid medicine data
+    if (!regimen || !regimen.medicine) {
+      console.warn(`No regimen found for dose_time_id ${pending.dose_time_id}`);
+      return {
+        name: 'Scheduled Dose',
+        dose: `${pending.quantity} ${pending.unit}`,
+        time: pending.time?.slice(0, 5) || 'Upcoming',
+        strength: 'Medicine details',
+        doseTimeId: pending.dose_time_id,
+      };
+    }
+    
     return {
-      name: regimen?.medicine.name || 'Medicine',
+      name: regimen.medicine.name || 'Medicine',
       dose: `${pending.quantity} ${pending.unit}`,
       time: pending.time?.slice(0, 5) || 'Upcoming',
-      strength: regimen?.medicine.strength || '',
+      strength: regimen.medicine.strength || '',
       doseTimeId: pending.dose_time_id,
     };
   })();
@@ -165,17 +180,12 @@ const handleStopSpeech = () => { stopSpeech(); setIsSpeaking(false); };
           </View>
         )}
 
-        {/* Greeting */}
+        {/* Greeting with no plus icon - moved to AI Chat */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: theme.spacing.xl }}>
           <View>
             <Text style={{ color: textMuted, fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>Neuro AI</Text>
             <Text style={{ color: textColor, fontSize: 26, fontWeight: '800', letterSpacing: -0.5 }}>{getGreeting()},{'\n'}{userName} 👋</Text>
           </View>
-          <Link href="/add-medicine" asChild>
-            <TouchableOpacity style={{ backgroundColor: theme.colors.info, width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#fff', fontSize: 26, fontWeight: '300', lineHeight: 30 }}>+</Text>
-            </TouchableOpacity>
-          </Link>
         </View>
 
 {/* Next Dose Card */}
@@ -273,7 +283,7 @@ const handleStopSpeech = () => { stopSpeech(); setIsSpeaking(false); };
           </AppCard>
         </View>
 
-{/* Neuro AI Link */}
+{/* Neuro AI Link with Plus Icon */}
         <Link href="/ai-chat" asChild>
           <TouchableOpacity style={{ marginBottom: theme.spacing.lg }}>
             <AppCard>
@@ -285,8 +295,15 @@ const handleStopSpeech = () => { stopSpeech(); setIsSpeaking(false); };
                   <Text style={{ color: textColor, fontSize: 18, fontWeight: '800' }}>Neuro AI</Text>
                   <Text style={{ color: textSecondary, fontSize: 13, marginTop: 3 }}>Ask questions about your health and doses</Text>
                 </View>
-                <View style={{ backgroundColor: isDark ? theme.dark.surfaceElevated : '#f1f5f9', padding: 12, borderRadius: 50 }}>
-                  <Text style={{ color: textSecondary, fontWeight: '700', fontSize: 16 }}>→</Text>
+                <View style={{ flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+                  {/* Plus icon to create new chat */}
+                  <View style={{ backgroundColor: isDark ? theme.dark.surfaceElevated : '#ede9fe', padding: 10, borderRadius: 50 }}>
+                    <Text style={{ color: theme.colors.info, fontWeight: '700', fontSize: 20 }}>+</Text>
+                  </View>
+                  {/* Navigation arrow */}
+                  <View style={{ backgroundColor: isDark ? theme.dark.surfaceElevated : '#f1f5f9', padding: 12, borderRadius: 50 }}>
+                    <Text style={{ color: textSecondary, fontWeight: '700', fontSize: 16 }}>→</Text>
+                  </View>
                 </View>
               </View>
             </AppCard>

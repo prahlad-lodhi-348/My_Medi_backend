@@ -159,3 +159,99 @@ export async function sendLowStockAlert(medicineName: string, daysRemaining: num
     trigger: null, // Fire immediately
   });
 }
+
+
+// ─── Notification Categories Setup ───────────────────────────────────────────
+
+export async function setupNotificationCategories(): Promise<void> {
+  try {
+    await Notifications.setNotificationCategoryAsync('DOSE_REMINDER', [
+      {
+        identifier: 'MARK_TAKEN',
+        buttonTitle: 'Mark Taken',
+        options: { opensAppToForeground: true },
+      },
+      {
+        identifier: 'SKIP',
+        buttonTitle: 'Skip',
+        options: { opensAppToForeground: true },
+      },
+    ]);
+
+    await Notifications.setNotificationCategoryAsync('MISSED_DOSE', [
+      {
+        identifier: 'MARK_TAKEN',
+        buttonTitle: 'Mark Taken',
+        options: { opensAppToForeground: true },
+      },
+      {
+        identifier: 'SKIP',
+        buttonTitle: 'Skip',
+        options: { opensAppToForeground: true },
+      },
+    ]);
+
+    await Notifications.setNotificationCategoryAsync('LOW_STOCK', [
+      {
+        identifier: 'REORDER',
+        buttonTitle: 'Reorder Now',
+        options: { opensAppToForeground: true },
+      },
+      {
+        identifier: 'DISMISS',
+        buttonTitle: 'Dismiss',
+        options: { opensAppToForeground: false },
+      },
+    ]);
+
+    console.log('[Notifications] Categories registered');
+  } catch (error) {
+    console.error('[Notifications] Failed to setup categories:', error);
+  }
+}
+
+// ─── Notification Tap Handler ─────────────────────────────────────────────────
+
+export function setupNotificationTapHandler(router: any): () => void {
+  const subscription = Notifications.addNotificationResponseReceivedListener(
+    (response) => {
+      const data = response.notification.request.content.data as {
+        type?: string;
+        regimenId?: number;
+      };
+
+      if (
+        data?.type === 'dose_reminder' ||
+        data?.type === 'missed_dose' ||
+        data?.type === 'low_stock'
+      ) {
+        router.push({
+          pathname: '/regimen-detail',
+          params: { regimenId: data.regimenId },
+        });
+      }
+    }
+  );
+
+  return () => subscription.remove();
+}
+
+// ─── Caregiver Push Token Register ───────────────────────────────────────────
+
+export async function registerCaregiverToken(
+  caregiverId: number,
+  apiClient: any
+): Promise<void> {
+  try {
+    const token = await registerForPushNotificationsAsync();
+    if (!token) return;
+
+    await apiClient.post(`/api/caregivers/${caregiverId}/register-token/`, {
+      expo_push_token: token,
+    });
+
+    console.log(`[Notifications] Caregiver ${caregiverId} token registered`);
+  } catch (error) {
+    console.error('[Notifications] Caregiver token registration failed:', error);
+  }
+}

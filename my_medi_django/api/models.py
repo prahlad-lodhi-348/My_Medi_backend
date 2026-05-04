@@ -29,30 +29,39 @@ class Profile(models.Model):
         ('F', 'Female'),
         ('O', 'Other'),
     ]
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, null=True) 
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, blank=True, null=True)
+    caregiver = models.CharField(max_length=100, blank=True, null=True)
     step_count = models.IntegerField(default=0)
     water_intake = models.IntegerField(default=0)
     
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
-
-# class caregiver(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='caregivers')
-#     name = models.CharField(max_length=100)
-#     email = models.EmailField()
-#     phone = models.CharField(max_length=15, blank=True)
-
-#     def __str__(self):
-#         return f"{self.name} (Caregiver for {self.user.username})"
     
+
+class Caregiver(models.Model):
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="caregivers")
+    name = models.CharField(max_length=100)
+    phone = models.CharField(max_length=15)
+    relationship = models.CharField(max_length=50)
+    notify_on_missed = models.BooleanField(default=True)
+    notify_on_low_stock = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("patient", "phone")
+
+    def __str__(self):
+        return f"{self.name} ({self.relationship}) - {self.patient.username}"
+
 
 class Medicine(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
-    dosage = models.CharField(max_length=50)
-    frequency = models.CharField(max_length=50)
-    notes = models.TextField(blank=True)
+    dosage = models.CharField(max_length=50, null=True, blank=True, default=None)
+    frequency = models.CharField(max_length=50, null=True, blank=True, default=None)
+    notes = models.TextField(blank=True, default='', null=True)
     image = models.ImageField(upload_to='medicines/', blank=True, null=True)
     working_mechanism = models.TextField(blank=True, default='Information not available')
     side_effects = models.TextField(blank=True, default='Information not available')

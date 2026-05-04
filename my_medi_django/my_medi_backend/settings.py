@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from decouple import config
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,7 +30,7 @@ DEBUG = True
 
 CORS_ALLOW_ALL_ORIGINS = True
 # 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.1.7','*']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.1.6','*',' 192.168.1.5']
 
 
 
@@ -84,8 +86,12 @@ WSGI_APPLICATION = 'my_medi_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'mymedi',             # database name
+        'USER': 'postgres',           
+        'PASSWORD': 'Prahlad@1141t',  
+        'HOST': '127.0.0.1',          # Screenshot mein 'Servers' localhost par hain
+        'PORT': '5432',               # Default PostgreSQL port
     }
 }
 

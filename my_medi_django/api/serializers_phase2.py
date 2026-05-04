@@ -6,10 +6,17 @@ from .models import (
     DoseTime,
     Stock,
     IntakeLog,
+    Caregiver,
 )
 
 
 class RegimenMedicineCreateSerializer(serializers.ModelSerializer):
+    form = serializers.CharField(required=False, allow_blank=True, default='TABLET')
+    strength = serializers.CharField(required=False, allow_blank=True, default='Not specified')
+    brand = serializers.CharField(required=False, allow_blank=True, default='')
+    description = serializers.CharField(required=False, allow_blank=True, default='')
+    notes = serializers.CharField(required=False, allow_blank=True, default='')
+    
     class Meta:
         model = RegimenMedicine
         fields = [
@@ -20,9 +27,14 @@ class RegimenMedicineCreateSerializer(serializers.ModelSerializer):
 
 
 class DoseTimeCreateSerializer(serializers.ModelSerializer):
+    label = serializers.CharField(required=False, allow_blank=True, default='')
+    
     class Meta:
         model = DoseTime
         fields = ['time', 'label', 'quantity', 'unit', 'days_of_week']
+        extra_kwargs = {
+            'days_of_week': {'required': False}
+        }
 
 
 class StockCreateSerializer(serializers.ModelSerializer):
@@ -107,6 +119,17 @@ class StockReorderResponseSerializer(serializers.Serializer):
     ordered = serializers.BooleanField()
 
 
+class CaregiverSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Caregiver
+        fields = [
+            'id', 'patient', 'name', 'phone', 'relationship',
+            'notify_on_missed', 'notify_on_low_stock',
+            'is_active', 'created_at',
+        ]
+        read_only_fields = ['id', 'patient', 'created_at']
+
+
 class RegimenWizardSerializer(serializers.Serializer):
     medicine = RegimenMedicineCreateSerializer()
     start_date = serializers.DateField()
@@ -140,6 +163,9 @@ class RegimenWizardSerializer(serializers.Serializer):
         regimen = Regimen.objects.create(user=user, medicine=medicine, **validated_data)
 
         for dt_data in dose_times_data:
+            # Remove days_of_week if it's None so model default is used
+            if dt_data.get('days_of_week') is None:
+                dt_data.pop('days_of_week', None)
             DoseTime.objects.create(regimen=regimen, **dt_data)
 
         Stock.objects.create(regimen=regimen, **stock_data)

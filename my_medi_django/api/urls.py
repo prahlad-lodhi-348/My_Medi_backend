@@ -3,7 +3,8 @@ from . import views
 from .views_phase2 import (
     RegimenWizardView, RegimenListView, RegimenDetailView, RegimenCalendarView,
     IntakeUpsertView, StockStatusView, StockUpdateView, StockRestockView,
-    StockReorderResponseView, LowStockAlertsView, MedicineInventoryView
+    StockReorderResponseView, LowStockAlertsView, MedicineInventoryView,
+    CaregiverListCreateView, CaregiverDeleteView
 )
 
 app_name = 'api'
@@ -11,6 +12,7 @@ app_name = 'api'
 urlpatterns = [
     path('register/', views.RegisterView.as_view(), name='register'),
     path('verify/<str:token>/', views.VerifyEmailView.as_view(), name='verify'),
+    path('verify-email/<str:token>/', views.VerifyEmailWebView.as_view(), name='verify-email-web'),
     path('login/', views.LoginView.as_view(), name='login'),
     path('profile/', views.ProfileView.as_view(), name='profile'),
     path('medicines/', views.MedicineListCreateView.as_view(), name='medicines'),
@@ -41,5 +43,9 @@ urlpatterns = [
 
     # Phase 2 - Inventory endpoint
     path('inventory/', MedicineInventoryView.as_view(), name='inventory'),
+
+    # Phase 2 - Caregiver endpoints
+    path('caregivers/', CaregiverListCreateView.as_view(), name='caregiver-list-create'),
+    path('caregivers/<int:pk>/', CaregiverDeleteView.as_view(), name='caregiver-delete'),
 ]
 

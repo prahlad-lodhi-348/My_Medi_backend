@@ -28,6 +28,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
     is_email_verified = serializers.BooleanField(source='user.is_email_verified', read_only=True)
     age = serializers.SerializerMethodField(read_only=True)
+    caregiver = serializers.CharField(max_length=100, allow_blank=True, required=False)
 
     def get_age(self, obj):
         if not obj.date_of_birth:
@@ -42,13 +43,20 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'user',
             'username', 'email', 'is_email_verified',
-            'phone', 'date_of_birth', 'age', 'gender',
+            'phone', 'date_of_birth', 'age', 'gender', 'caregiver',
             'step_count', 'water_intake',
         ]
         read_only_fields = ['id', 'user', 'username', 'email', 'is_email_verified', 'age']
 
 
 class MedicineSerializer(serializers.ModelSerializer):
+    # Make fields optional with allow_blank=True for serializer validation
+    dosage = serializers.CharField(required=False, allow_blank=True, allow_null=True, default=None)
+    frequency = serializers.CharField(required=False, allow_blank=True, allow_null=True, default=None)
+    notes = serializers.CharField(required=False, allow_blank=True, default='')
+    working_mechanism = serializers.CharField(required=False, allow_blank=True, default='Information not available')
+    side_effects = serializers.CharField(required=False, allow_blank=True, default='Information not available')
+
     class Meta:
         model = Medicine
         fields = '__all__'

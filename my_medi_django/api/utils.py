@@ -8,7 +8,7 @@ def send_verification_email(user, request):
     token = user.generate_verification_token()
 
     verification_url = request.build_absolute_uri(
-        reverse("api:verify", kwargs={"token": str(token)})
+        reverse("api:verify-email-web", kwargs={"token": str(token)})
     )
 
     context = {

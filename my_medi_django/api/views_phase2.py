@@ -11,12 +11,12 @@ from zoneinfo import ZoneInfo
 from math import floor
 
 from .models import (
-    Regimen, RegimenMedicine, DoseTime, Stock, IntakeLog
+    Regimen, RegimenMedicine, DoseTime, Stock, IntakeLog, Caregiver
 )
 from .serializers_phase2 import (
     RegimenWizardSerializer, RegimenReadSerializer, RegimenCreateSerializer,
     IntakeUpsertSerializer, StockPatchSerializer, StockRestockSerializer,
-    StockReorderResponseSerializer
+    StockReorderResponseSerializer, CaregiverSerializer
 )
 from .timezone_utils import get_request_tz
 
@@ -455,3 +455,36 @@ class MedicineInventoryView(APIView):
 
         return Response(data)
 
+
+class CaregiverListCreateView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """List all caregivers for the authenticated patient."""
+        caregivers = Caregiver.objects.filter(patient=request.user)
+        serializer = CaregiverSerializer(caregivers, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        """Create a new caregiver for the authenticated patient."""
+        serializer = CaregiverSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(patient=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CaregiverDeleteView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        """Delete a caregiver belonging to the authenticated patient."""
+        try:
+            caregiver = Caregiver.objects.get(pk=pk, patient=request.user)
+        except Caregiver.DoesNotExist:
+            return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        caregiver.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

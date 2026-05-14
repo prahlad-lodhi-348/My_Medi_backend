@@ -3,12 +3,14 @@
 
 import logging
 from datetime import date, timedelta, datetime
-from django.utils import timezone
+
+import requests
+from celery import shared_task
+from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from django.conf import settings
-from celery import shared_task
-import requests
+from django.utils import timezone
+
 
 from .models import (
     IntakeLog, Caregiver, NotificationLog, DoseTime, Regimen, User
@@ -20,7 +22,8 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────
 # HELPER: Expo Push Notification bhejna
 # ─────────────────────────────────────────────
-def send_expo_push(token: str, title: str, body: str, data: dict = None) -> bool:
+def send_expo_push(token: str, title: str, body: str, data: dict | None = None) -> bool:
+
     """
     Expo Push API se notification bhejo.
     Returns True if sent successfully.
@@ -47,15 +50,26 @@ def send_expo_push(token: str, title: str, body: str, data: dict = None) -> bool
             },
             timeout=10,
         )
-        result = resp.json()
-        # Expo returns {"data": {"status": "ok"}} on success
+        # Expo returns JSON on both success/failure.
+        try:
+            result = resp.json()
+        except Exception:
+            result = {"raw": resp.text}
+
+        # Expo returns {"data": {"status": "ok"}} on success.
         if result.get("data", {}).get("status") == "ok":
             return True
-        logger.error(f"Expo push failed: {result}")
+
+        logger.error(
+            "Expo push failed (HTTP %s): %s",
+            resp.status_code,
+            result,
+        )
         return False
-    except Exception as e:
-        logger.error(f"Expo push exception: {e}")
+    except Exception:
+        logger.exception("Expo push exception")
         return False
+
 
 
 # ─────────────────────────────────────────────

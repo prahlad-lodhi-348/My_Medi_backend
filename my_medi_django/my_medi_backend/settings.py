@@ -30,7 +30,9 @@ DEBUG = True
 
 CORS_ALLOW_ALL_ORIGINS = True
 # 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost','*',' 192.168.1.5']
+ALLOWED_HOSTS = ['192.168.1.7']
+# If you deploy, add your domain/IP here.
+
 
 
 
@@ -47,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api',
+    'celery'
 
 ]
 
@@ -94,13 +97,18 @@ DATABASES = {
         'PORT': '5432',               # Default PostgreSQL port
     }
 }
-# clery 
 # Celery
-CELERY_BROKER_URL        = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND    = 'redis://localhost:6379/0'
-CELERY_ACCEPT_CONTENT    = ['json']
-CELERY_TASK_SERIALIZER   = 'json'
-CELERY_TIMEZONE          = 'Asia/Kolkata'
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Kolkata'
+
+# If beat is run separately, this helps avoid surprises.
+CELERY_ENABLE_UTC = False
+# CELERY_* serializers above already set.
+
 
 from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {

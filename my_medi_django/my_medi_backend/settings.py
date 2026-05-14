@@ -12,8 +12,6 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from decouple import config
-import os
-
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -30,9 +28,7 @@ DEBUG = True
 
 CORS_ALLOW_ALL_ORIGINS = True
 # 
-ALLOWED_HOSTS = ['192.168.1.7']
-# If you deploy, add your domain/IP here.
-
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.1.6','*']
 
 
 
@@ -49,7 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api',
-    'celery'
 
 ]
 
@@ -89,41 +84,11 @@ WSGI_APPLICATION = 'my_medi_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'mymedi',             # database name
-        'USER': 'postgres',           
-        'PASSWORD': 'Prahlad@1141t',  
-        'HOST': '127.0.0.1',          # Screenshot mein 'Servers' localhost par hain
-        'PORT': '5432',               # Default PostgreSQL port
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-# Celery
-CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'Asia/Kolkata'
 
-# If beat is run separately, this helps avoid surprises.
-CELERY_ENABLE_UTC = False
-# CELERY_* serializers above already set.
-
-
-from celery.schedules import crontab
-CELERY_BEAT_SCHEDULE = {
-    'check-missed-doses': {
-        'task': 'api.tasks.check_missed_doses',
-        'schedule': crontab(minute='*/30'),
-    },
-    'weekly-caregiver-report': {
-        'task': 'api.tasks.send_weekly_caregiver_report',
-        'schedule': crontab(hour=20, minute=0, day_of_week='sunday'),
-    },
-}
-
-# INSTALLED_APPS mein add karo:
-# 'django_celery_beat',
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

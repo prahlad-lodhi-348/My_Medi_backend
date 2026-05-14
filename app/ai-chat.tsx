@@ -175,7 +175,7 @@ export default function AIChat() {
       const BASE = (() => {
         const envBase = process.env.EXPO_PUBLIC_API_BASE_URL;
         if (envBase && envBase.startsWith("http")) return envBase;
-        return "http://192.168.1.5:8000/api";
+        return "http://192.168.1.1:8000/api";
       })();
 
       const res = await fetch(`${BASE}/ai-chat/`, {

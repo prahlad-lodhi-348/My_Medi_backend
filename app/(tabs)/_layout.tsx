@@ -1,15 +1,15 @@
 import { useAuth } from "@/context/AuthContext";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 import React from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 
 function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>["name"];
+  name: React.ComponentProps<typeof Ionicons>["name"];
   color: string;
 }) {
-  return <FontAwesome size={22} style={{ marginBottom: -3 }} {...props} />;
+  return <Ionicons size={24} style={{ marginBottom: -3 }} {...props} />;
 }
 
 export default function TabsLayout() {
@@ -36,34 +36,36 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
       }}
     >
-      {/*
-       * Tab structure:
-       * - profile: Dashboard (next dose, health stats, links)
-       * - schedule: Regimen list (medicine schedule)
-       * - stock-alerts: Low stock alerts
-       * - (index is hidden - serves as profile)
-       */}
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Home",
-          tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
+          tabBarLabel: "Home",
+          tabBarIcon: ({ color }) => <TabBarIcon name="home-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="schedule"
         options={{
-          title: "Schedule",
+          tabBarLabel: "Schedule",
           tabBarIcon: ({ color }) => (
-            <TabBarIcon name="calendar" color={color} />
+            <TabBarIcon name="calendar-outline" color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="stock-alerts"
         options={{
-          title: "Alerts",
-          tabBarIcon: ({ color }) => <TabBarIcon name="bell" color={color} />,
+          tabBarLabel: "Alerts",
+          tabBarIcon: ({ color }) => <TabBarIcon name="notifications-outline" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="index"
+        options={{
+          tabBarLabel: "Profile",
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon name="person-circle-outline" color={color} />
+          ),
         }}
       />
     </Tabs>

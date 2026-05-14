@@ -19,7 +19,7 @@ export function getBaseUrl(): string {
   }
 
   // Default for physical iOS/Android on same Wi-Fi
-  return 'http://192.168.1.5:8000/api/';
+  return 'http://192.168.1.1:8000/api/';
 }
 
 export const API_URL = getBaseUrl();

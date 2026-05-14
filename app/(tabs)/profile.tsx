@@ -3,9 +3,10 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/src/api/client";
 import { theme } from "@/src/theme";
 import { CalendarRange, Regimen } from "@/src/types/phase2";
-import { Link } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { playReminderVoice, stopSpeech } from '../../utils/voice';
 
 function fmtDate(d: Date): string {
@@ -17,10 +18,37 @@ function fmtDate(d: Date): string {
 
 export default function Dashboard() {
   const { user, token } = useAuth();
+  const router = useRouter();
   const [regimens, setRegimens] = useState<Regimen[]>([]);
   const [calendarData, setCalendarData] = useState<CalendarRange | null>(null);
   const [loading, setLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // ── Neuro AI navigation helpers ─────────────────────────────────────────────
+  /** Opens image picker → passes imageUri to Chat screen */
+  const handleOpenWithImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Allow photo library access to upload an image to Neuro AI.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets?.[0]) {
+        router.push({ pathname: '/ai-chat', params: { imageUri: result.assets[0].uri } });
+      }
+    } catch (err) {
+      console.error('Image picker error:', err);
+    }
+  };
+
+  /** Navigates directly to Chat screen without an image */
+  const handleOpenChat = () => router.push('/ai-chat');
 
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -283,32 +311,40 @@ const handleStopSpeech = () => { stopSpeech(); setIsSpeaking(false); };
           </AppCard>
         </View>
 
-{/* Neuro AI Link with Plus Icon */}
-        <Link href="/ai-chat" asChild>
-          <TouchableOpacity style={{ marginBottom: theme.spacing.lg }}>
-            <AppCard>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flex: 1 }}>
-                  <View style={{ backgroundColor: '#ede9fe', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                    <Text style={{ fontSize: 18 }}>🧠</Text>
-                  </View>
-                  <Text style={{ color: textColor, fontSize: 18, fontWeight: '800' }}>Neuro AI</Text>
-                  <Text style={{ color: textSecondary, fontSize: 13, marginTop: 3 }}>Ask questions about your health and doses</Text>
-                </View>
-                <View style={{ flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-                  {/* Plus icon to create new chat */}
-                  <View style={{ backgroundColor: isDark ? theme.dark.surfaceElevated : '#ede9fe', padding: 10, borderRadius: 50 }}>
-                    <Text style={{ color: theme.colors.info, fontWeight: '700', fontSize: 20 }}>+</Text>
-                  </View>
-                  {/* Navigation arrow */}
-                  <View style={{ backgroundColor: isDark ? theme.dark.surfaceElevated : '#f1f5f9', padding: 12, borderRadius: 50 }}>
-                    <Text style={{ color: textSecondary, fontWeight: '700', fontSize: 16 }}>→</Text>
-                  </View>
-                </View>
+{/* Neuro AI Card */}
+        <AppCard style={{ marginBottom: theme.spacing.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Left — label */}
+            <TouchableOpacity style={{ flex: 1 }} onPress={handleOpenChat} activeOpacity={0.7}>
+              <View style={{ backgroundColor: '#ede9fe', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                <Text style={{ fontSize: 18 }}>🧠</Text>
               </View>
-            </AppCard>
-          </TouchableOpacity>
-        </Link>
+              <Text style={{ color: textColor, fontSize: 18, fontWeight: '800' }}>Neuro AI</Text>
+              <Text style={{ color: textSecondary, fontSize: 13, marginTop: 3 }}>Ask questions about your health and doses</Text>
+            </TouchableOpacity>
+
+            {/* Right — action buttons */}
+            <View style={{ flexDirection: 'column', gap: 12, alignItems: 'center', marginLeft: 12 }}>
+              {/* + : open image picker then go to chat */}
+              <TouchableOpacity
+                onPress={handleOpenWithImage}
+                activeOpacity={0.7}
+                style={{ backgroundColor: isDark ? theme.dark.surfaceElevated : '#ede9fe', padding: 10, borderRadius: 50 }}
+              >
+                <Text style={{ color: theme.colors.info, fontWeight: '700', fontSize: 20 }}>+</Text>
+              </TouchableOpacity>
+
+              {/* → : navigate directly to chat */}
+              <TouchableOpacity
+                onPress={handleOpenChat}
+                activeOpacity={0.7}
+                style={{ backgroundColor: isDark ? theme.dark.surfaceElevated : '#f1f5f9', padding: 12, borderRadius: 50 }}
+              >
+                <Text style={{ color: textSecondary, fontWeight: '700', fontSize: 16 }}>→</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </AppCard>
 
       </ScrollView>
     </AppScreen>

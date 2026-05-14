@@ -30,7 +30,7 @@ DEBUG = True
 
 CORS_ALLOW_ALL_ORIGINS = True
 # 
-ALLOWED_HOSTS = ['192.168.1.7']
+ALLOWED_HOSTS = ['*','127.0.0.1','192.168.1.1']
 # If you deploy, add your domain/IP here.
 
 
@@ -97,6 +97,7 @@ DATABASES = {
         'PORT': '5432',               # Default PostgreSQL port
     }
 }
+
 # Celery
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
@@ -122,7 +123,6 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-# INSTALLED_APPS mein add karo:
 # 'django_celery_beat',
 
 # Password validation

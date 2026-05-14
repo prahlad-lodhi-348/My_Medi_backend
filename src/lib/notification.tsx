@@ -1,9 +1,13 @@
 import { api } from '@/src/api/client';
 import { storage } from '@/src/lib/storage';
 import Constants from 'expo-constants';
+
+import { getBaseUrl } from '@/src/api/baseUrl';
+
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+
 
 // ─── Foreground Notification Handler ───────────────────────────────────────
 // Determines how notifications appear when app is in foreground.
@@ -261,7 +265,7 @@ export async function sendLowStockAlert(
 export async function savePushTokenToBackend(): Promise<boolean> {
   try {
     const token = await registerForPushNotificationsAsync();
-    
+
     if (!token) {
       console.warn('[Notifications] No push token available to save');
       return false;
@@ -280,21 +284,28 @@ export async function savePushTokenToBackend(): Promise<boolean> {
       return false;
     }
 
-    // Send to backend
+    const baseUrl = getBaseUrl();
+    console.log('[Notifications] Saving push token to backend', {
+      baseUrl,
+      endpoint: 'push-tokens/',
+      tokenPreview: String(token).slice(0, 8) + '…',
+    });
+
     await api('push-tokens/', {
       method: 'POST',
       body: { expo_push_token: token },
       token: authToken,
     });
 
+
     console.log('[Notifications] Push token saved to backend successfully');
     return true;
   } catch (error) {
     console.error('[Notifications] Failed to save push token to backend:', error);
-    // Don't throw - this is non-critical
     return false;
   }
 }
+
 
 // ─── Notification Categories Setup ───────────────────────────────────────────
 

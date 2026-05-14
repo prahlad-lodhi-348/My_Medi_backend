@@ -1,14 +1,15 @@
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import {
-    registerForPushNotificationsAsync,
-    savePushTokenToBackend,
-    setupNotificationCategories,
-    setupNotificationTapHandler,
+  registerForPushNotificationsAsync,
+  savePushTokenToBackend,
+  setupNotificationCategories,
+  setupNotificationTapHandler,
 } from "@/src/lib/notification";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect } from "react";
-import { useColorScheme } from "react-native";
+import { Platform, useColorScheme } from "react-native";
+
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "../global.css";
 
@@ -19,6 +20,8 @@ function RootLayoutContent() {
   const statusBarStyle = colorScheme === 'dark' ? 'light' : 'dark';
 
   useEffect(() => {
+    if (Platform.OS === 'web') return;
+
     // Setup notification categories on app start
     setupNotificationCategories().catch((error) =>
       console.error("Failed to setup notification categories:", error)
@@ -38,6 +41,7 @@ function RootLayoutContent() {
 
     return cleanup;
   }, [router]);
+
 
   // Save push token to backend after user logs in
   useEffect(() => {

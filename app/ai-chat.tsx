@@ -251,6 +251,34 @@ export default function AIChat() {
         }}
       />
 
+
+{/* Camera Button */}
+{Platform.OS !== 'web' && (
+  <TouchableOpacity
+    onPress={() => {
+      Alert.alert(
+        'Add Image',
+        'Choose source',
+        [
+          { text: 'Camera', onPress: takePhoto },
+          { text: 'Gallery', onPress: pickImage },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
+    }}
+    style={{
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: isDark ? '#1f2937' : '#e5e7eb',
+    }}
+  >
+    <Text style={{ fontSize: 22 }}>📷</Text>
+  </TouchableOpacity>
+)}
+
       {/* Medicine context loading banner */}
       {contextLoading && (
         <View style={{

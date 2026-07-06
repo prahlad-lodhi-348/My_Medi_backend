@@ -1,8 +1,11 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+
 from . import views
 
 app_name = 'api'
 
+# Existing APIView routes (do not change)
 urlpatterns = [
     path('register/', views.RegisterView.as_view(), name='register'),
     path('verify/<str:token>/', views.VerifyEmailView.as_view(), name='verify'),
@@ -15,4 +18,17 @@ urlpatterns = [
     path('ai-chat/', views.AIChatView.as_view(), name='ai_chat'),
     path('resend-verification/', views.ResendVerificationView.as_view(), name='resend_verification'),
     path('logout/', views.LogoutView.as_view(), name='logout'),
+    
 ]
+
+# New router routes under /api/
+router = DefaultRouter()
+router.register(r'regimens', views.RegimenViewSet, basename='regimens')
+router.register(r'stock-alerts', views.StockAlertViewSet, basename='stock-alerts')
+router.register(r'doses', views.RegimenDoseViewSet, basename='doses')
+router.register(r'calendar', views.CalendarViewSet, basename='calendar')
+
+urlpatterns += [
+    path('', include(router.urls)),
+]
+

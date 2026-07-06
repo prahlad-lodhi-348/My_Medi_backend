@@ -13,6 +13,10 @@ __pycache__/
 # Local DB
 db.sqlite3
 *.sqlite3
+db.postges
+*.postgres
+
+
 
 # Virtualenv
 venv/
@@ -23,3 +27,4 @@ media/
 
 # OS
 .DS_Store
+.TODO.md

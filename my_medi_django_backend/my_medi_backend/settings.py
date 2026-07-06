@@ -14,6 +14,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 from decouple import config
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,14 +23,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)_nox&mqkv_(jss0=g81-t8@tqe=a5#f3out2&h&8tgo1^t2gu'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-fallback-key-for-dev-purposes-only')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', cast=bool, default=True)
 
 CORS_ALLOW_ALL_ORIGINS = True
 # 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.1.6','*']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.1.5','*']
 
 
 
@@ -86,11 +87,11 @@ WSGI_APPLICATION = 'my_medi_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('POSTGRES_DB', default='postgres'),
-        'USER': config('POSTGRES_USER', default='postgres'),
-        'PASSWORD': config('POSTGRES_PASSWORD', default='postgres'),
-        'HOST': config('POSTGRES_HOST', default='localhost'),
-        'PORT': config('POSTGRES_PORT', cast=int, default=5432),
+        'NAME': config('DB_NAME', default=''),
+        'USER': config('DB_USER', default=''),
+        'PASSWORD': config('DB_PASSWORD', default=''),
+        'HOST': config('DB_HOST', default=''),
+        'PORT': config('DB_PORT', cast=int, default=5432),
     }
 }
 

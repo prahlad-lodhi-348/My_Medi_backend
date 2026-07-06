@@ -1,0 +1,25 @@
+{
+  "typeCheckingMode": "off",
+  "reportMissingTypeStubs": "none",
+  "diagnosticSeverityOverrides": {
+    "reportMissingTypeStubs": "none",
+    "reportUnknownParameterType": "none",
+    "reportUnknownArgumentType": "none",
+    "reportUnknownVariableType": "none",
+    "reportUnknownMemberType": "none",
+    "reportUnknownParameterName": "none",
+    "reportOptionalSubscript": "none",
+    "reportOptionalMemberAccess": "none",
+    "reportIndexIssue": "none",
+    "reportAttributeAccessIssue": "none",
+    "reportIncompatibleMethodOverride": "none",
+    "reportConstantRedefinition": "none"
+  },
+  "exclude": [
+    "**/node_modules",
+    "**/.venv",
+    "**/venv",
+    "**/migrations",
+    "**/site-packages"
+  ]
+}

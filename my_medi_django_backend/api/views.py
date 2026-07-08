@@ -194,9 +194,6 @@ class AnalyzeMedicineView(APIView):
             uploaded_gemini_file = client.files.upload(file=temp_file_path)
 
             # ✅ Ask Gemini to analyze
-            client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            model = client.models.get_model('gemini-1.5-flash')
-
             prompt = """Analyze this medicine image and extract details in JSON format.
             Return ONLY valid JSON with these fields (use null if not visible):
             {
@@ -207,17 +204,19 @@ class AnalyzeMedicineView(APIView):
               "description": "brief description"
             }"""
 
-            response = model.generate_content([prompt, uploaded_gemini_file])
+            response = client.models.generate_content(
+                model="models/gemini-2.5-flash",
+                contents=[prompt, uploaded_gemini_file],
+            )
             response_text = response.text.strip()
 
-            # Clean up markdown code blocks if Gemini wraps JSON in ```
+          
             if response_text.startswith('```'):
                 response_text = response_text.split('```')[1]
                 if response_text.startswith('json'):
                     response_text = response_text[4:]
                 response_text = response_text.strip()
 
-            # ✅ Parse JSON safely
             try:
                 extracted_data = json.loads(response_text)
             except json.JSONDecodeError:
@@ -226,7 +225,7 @@ class AnalyzeMedicineView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # ✅ Use fallback values for NOT NULL fields
+           
             name_value = extracted_data.get('name') or "Unknown Medicine"
             dosage_value = extracted_data.get('dosage') or "Not Specified"
             strength_value = extracted_data.get('strength') or ""
@@ -297,9 +296,6 @@ class MedicineListCreateView(APIView):
         name = request.data.get('name')
         dosage = request.data.get('dosage')
         frequency = request.data.get('frequency')
-
-        # Validate only Step-1 required fields.
-        # Step 2 should update dosage/frequency before regimen is used.
         missing = []
         if name in (None, '', []):
             missing.append('name')
@@ -323,25 +319,27 @@ class MedicineListCreateView(APIView):
                 temp_file_path = None
                 uploaded_gemini_file = None
                 try:
-                    # Save uploaded image to a temporary file on disk
+                    
                     suffix = os.path.splitext(image_file.name)[1] or '.jpg'
                     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
                         for chunk in image_file.chunks():
                             temp_file.write(chunk)
                         temp_file_path = temp_file.name
 
-                    # Upload to Gemini using the file PATH
+                   
                     client = genai.Client(api_key=settings.GEMINI_API_KEY)
                     uploaded_gemini_file = client.files.upload(file=temp_file_path)
 
-                    model = client.models.get_model('gemini-1.5-flash')
                     prompt = (
                         "Identify this medicine and provide: "
                         "1. How it works (simple 2 sentences), "
                         "2. Potential side effects (bullet points), "
                         "3. Safety precautions. Format it as clean JSON."
                     )
-                    response = model.generate_content([prompt, uploaded_gemini_file])
+                    response = client.models.generate_content(
+                        model="gemini-1.5-flash",
+                        contents=[prompt, uploaded_gemini_file],
+                    )
                     
                     response_text = response.text.strip()
                     if response_text.startswith('```'):
@@ -450,13 +448,15 @@ class AIInsightsView(APIView):
             ],
         }
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        model = client.models.get_model('gemini-1.5-flash')
         prompt = (
             "Generate ONE personalized health tip based on recent health data "
             f"(steps: {data['step_count']}, water: {data['water_intake']}ml) and these medications: "
             f"{json.dumps(data['medicines'])}. Keep concise, actionable, 1 sentence."
         )
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=prompt,
+        )
         tip = response.text.strip()
         return Response({'tip': tip})
 
@@ -471,7 +471,6 @@ class AIChatView(APIView):
             return Response({'error': 'Message is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        model = client.models.get_model('gemini-1.5-flash')
 
         prompt = (
             "You are a helpful medical AI assistant. "
@@ -482,7 +481,10 @@ class AIChatView(APIView):
         )
 
         try:
-            response = model.generate_content(prompt)
+            response = client.models.generate_content(
+                model="gemini-1.5-flash",
+                contents=prompt,
+            )
             ai_text = response.text.strip()
             return Response({'response': ai_text})
         except Exception:
@@ -549,9 +551,6 @@ class CalendarViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request, *args, **kwargs):
-        # Frontend/router typically uses detail routes with pk, but when
-        # registered as 'calendar' without further constraints, list() may be hit.
-        # Require regimen id via query param.
         regimen_id = request.query_params.get("regimen")
         if not regimen_id:
             return Response(
@@ -607,7 +606,7 @@ class RegimenViewSet(viewsets.ModelViewSet):
         return Regimen.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        # user is set in serializer.create() using request from context
+     
         serializer.save()
 
     @action(detail=True, methods=['post'], url_path='restock')
@@ -629,9 +628,6 @@ class RegimenViewSet(viewsets.ModelViewSet):
         regimen = self.get_object()
 
         if request.method == 'PATCH':
-            # Set the absolute stock quantity (a correction, distinct from
-            # restock() which only ever adds to the existing count).
-            # Frontend hits: PATCH /api/regimens/<id>/stock/  body: { current_quantity }
             raw_qty = request.data.get('current_quantity')
             try:
                 quantity = int(raw_qty)
@@ -671,7 +667,7 @@ class RegimenViewSet(viewsets.ModelViewSet):
         stock = StockItem.objects.filter(regimen=regimen).first()
         quantity_remaining = stock.quantity_remaining if stock else 0
 
-        # Determine threshold from active StockAlert if present, else use 0.
+     
         alert = StockAlert.objects.filter(regimen=regimen, is_active=True).first()
         threshold = alert.threshold if alert else 0
 
@@ -760,7 +756,7 @@ class StockAlertViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Only show alerts belonging to the logged-in user
+        
         return StockAlert.objects.filter(regimen__user=self.request.user)
 
     def perform_create(self, serializer):
@@ -768,7 +764,7 @@ class StockAlertViewSet(viewsets.ModelViewSet):
         regimen = Regimen.objects.get(id=regimen_id, user=self.request.user)
         serializer.save(regimen=regimen)
 
-    # FIX: Added url_path='low-stock' to match the frontend request exactly
+   
     @action(detail=False, methods=['get'], url_path='low-stock')
     def low_stock(self, request):
         """
@@ -801,7 +797,7 @@ class RegimenDoseViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return RegimenDose.objects.filter(regimen__user=self.request.user)
 
-    # Custom actions for dose tracking
+   
     @action(detail=True, methods=['post'], url_path='take')
     def take(self, request, pk=None):
         dose = self.get_object()
@@ -820,6 +816,3 @@ class RegimenDoseViewSet(viewsets.ModelViewSet):
         dose.save(update_fields=['status', 'taken_at', 'missed_at'])
         return Response(RegimenDoseSerializer(dose).data)
 
-
-# NOTE: Calendar endpoint moved to RegimenViewSet.calendar() (detail=True)
-# This viewset is kept intentionally unused to avoid the old top-level route.

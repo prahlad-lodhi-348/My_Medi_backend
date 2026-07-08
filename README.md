@@ -2,6 +2,12 @@
 
 This repository contains the Django REST API backend for the MY MEDI application. It supports user authentication, profile management, medicine tracking, medication schedules, stock alerts, and AI-powered medicine image analysis.
 
+## Project Overview
+
+MY MEDI Backend is designed to power a smart medication management experience. The API handles user accounts, medication records, reminder schedules, stock monitoring, and AI-assisted medicine recognition from uploaded images.
+
+It is built to support both mobile and web clients with a clean REST interface and scalable Django architecture.
+
 ## Features
 
 - User registration and email verification
@@ -98,6 +104,17 @@ Common endpoints include:
 - POST /api/analyze-medicine/
 - GET/POST /api/regimens/
 - GET/POST /api/stock-alerts/
+
+## Screenshots
+
+Add screenshots of your application UI or API workflows here to make the repository more engaging.
+
+Example:
+
+- Authentication flow
+- Medicine dashboard
+- AI image analysis result
+- Stock alerts and reminders
 
 ## License
 

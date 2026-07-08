@@ -1,16 +1,16 @@
 # MY MEDI BACKEND
 
-Django REST API backend for the MY MEDI application. It provides authentication, user profile management, medicine tracking, regimen management, stock alerts, and AI-powered medicine image analysis.
+This repository contains the Django REST API backend for the MY MEDI application. It supports user authentication, profile management, medicine tracking, medication schedules, stock alerts, and AI-powered medicine image analysis.
 
 ## Features
 
 - User registration and email verification
-- JWT-style token authentication via DRF token auth
+- Secure authentication using Django REST Framework tokens
 - User profile management
-- Medicine CRUD operations
+- Medicine management APIs
 - Regimen and dosage management
 - Stock alert tracking
-- AI medicine analysis using Gemini
+- AI-based medicine analysis using Gemini
 - Reminder and AI insight endpoints
 
 ## Tech Stack
@@ -26,24 +26,24 @@ Django REST API backend for the MY MEDI application. It provides authentication,
 
 ```bash
 my_medi_django_backend/
-├── api/                 # API app with models, views, serializers, URLs
+├── api/                 # API app with models, views, serializers, and URLs
 ├── my_medi_backend/     # Django project settings and routing
-├── templates/           # HTML/email templates
-├── static/              # Static assets
+├── templates/           # HTML and email templates
+├── static/              # Static files
 └── manage.py            # Django management script
 ```
 
-## Requirements
+## Installation
 
-Install dependencies:
+Install the required dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Environment Variables
+## Environment Configuration
 
-Create a `.env` file in the project root with values such as:
+Create a `.env` file in the project root and add values like the following:
 
 ```env
 SECRET_KEY=your-secret-key
@@ -101,4 +101,4 @@ Common endpoints include:
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License. See the LICENSE file for more details.

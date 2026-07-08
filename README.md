@@ -1,4 +1,6 @@
-# MY MEDI BACKEND
+# MY MEDI Backend
+
+A Django REST API backend for the MY MEDI application, built to manage medicines, user profiles, medication schedules, stock alerts, and AI-powered medicine image analysis.
 
 This repository contains the Django REST API backend for the MY MEDI application. It supports user authentication, profile management, medicine tracking, medication schedules, stock alerts, and AI-powered medicine image analysis.
 

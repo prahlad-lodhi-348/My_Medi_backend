@@ -10,6 +10,14 @@ MY MEDI Backend is designed to power a smart medication management experience. T
 
 It is built to support both mobile and web clients with a clean REST interface and scalable Django architecture.
 
+## Frontend
+
+This backend is designed to work with the Expo-based mobile frontend repository:
+
+- Frontend Repository: https://github.com/prahlad-lodhi-348/My_Medi_Expo
+
+The Expo app communicates with this backend through the REST API endpoints defined in this project.
+
 ## Features
 
 - User registration and email verification
